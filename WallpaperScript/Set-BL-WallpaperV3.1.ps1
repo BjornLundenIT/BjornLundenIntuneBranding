@@ -113,8 +113,8 @@ function Build-APeakingBearWallpaper {
     Add-Type -AssemblyName System.Drawing
 
     try {
-        $screenWidth = 4096#[System.Windows.Forms.SystemInformation]::PrimaryMonitorSize.Width
-        $screenHeight = 1152#[System.Windows.Forms.SystemInformation]::PrimaryMonitorSize.Height
+        $screenWidth = [System.Windows.Forms.SystemInformation]::PrimaryMonitorSize.Width
+        $screenHeight = [System.Windows.Forms.SystemInformation]::PrimaryMonitorSize.Height
     }
     catch {
         $screenWidth = 1920 # Fallback
@@ -218,8 +218,8 @@ function Build-ABearWallpaper {
     Add-Type -AssemblyName System.Drawing
 
     try {
-        $screenWidth = 4096#[System.Windows.Forms.SystemInformation]::PrimaryMonitorSize.Width
-        $screenHeight = 1152#[System.Windows.Forms.SystemInformation]::PrimaryMonitorSize.Height
+        $screenWidth = [System.Windows.Forms.SystemInformation]::PrimaryMonitorSize.Width
+        $screenHeight = [System.Windows.Forms.SystemInformation]::PrimaryMonitorSize.Height
     }
     catch {
         $screenWidth = 1920 # Fallback
