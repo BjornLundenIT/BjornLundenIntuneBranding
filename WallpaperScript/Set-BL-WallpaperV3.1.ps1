@@ -362,7 +362,8 @@ else {
 
             # Check if current wallpaper is still set to our wallpaper and not a user defined one.
             # If a user defined one is set in the meanwhile, we are not going to change it!
-            if ($currentWallpaper -ceq $finalImagePath) {
+            # also checks for the V2 filepath "C:\BL_Intune\BL_WallpaperScripts\Current_Wallpaper\BLWallpaper.png"
+            if ($currentWallpaper -ceq $finalImagePath -or $currentWallpaper -eq "C:\BL_Intune\BL_WallpaperScripts\Current_Wallpaper\BLWallpaper.png") {
                 Write-Host "No user-defined wallpaper found for user [$env:USERNAME], triggering re-build and update"
 
                 # Enforce new download and rebuild
