@@ -382,5 +382,20 @@ else {
     }
 }
 
+## START - FOR INTUNE DETECTION SCRIPT - START ##
+# if this file does not exist, the remedation script will run again
+$path = "C:\ProgramData\BLIntune\BL-Wallpaper\DeleteToReinstallBLWallpaper.txt"
+
+# Ensure the directory exists
+$directory = Split-Path $path
+if (-not (Test-Path $directory)) {
+    New-Item -Path $directory -ItemType Directory -Force
+}
+
+# Create the text file (empty)
+New-Item -Path $path -ItemType File -Force
+## END - FOR INTUNE DETECTION SCRIPT - END ##
+
+
 Write-Host "-End script block"
 Stop-Transcript
