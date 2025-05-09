@@ -1,3 +1,4 @@
+Write-Host "Running BL Wallpaper V3.1"
 # Load System.Windows.Forms assembly at the beginning
 [System.Reflection.Assembly]::LoadWithPartialName("System.Windows.Forms") | Out-Null
 
