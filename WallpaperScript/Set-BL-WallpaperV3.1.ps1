@@ -34,6 +34,10 @@ $bjornLundenPngPath = Join-Path $finalImageDirectory "BjornLunden.png"
 $bjornLundenWhitePngPath = Join-Path $finalImageDirectory "BjornLundenWhite.png"
 $blBearPngPath = Join-Path $finalImageDirectory "BLBear.png"
 
+#Define BjornLunden Text Logo Y position
+$intY = 75
+$intX = 15
+
 # Define the flag file path
 $global:flagFilePath = Join-Path -Path $env:LOCALAPPDATA -ChildPath "\WallpaperFlagV3.0.txt"
 
@@ -102,49 +106,53 @@ function Initialize-WallpaperResources {
     }
 }
 function Build-APeakingBearWallpaper {
-    $logoScaleFactor = 0.5 # Adjust this value to control the logo size (e.g., 0.5 for half the current size)
-    $TextLogoScaleFactor = 0.3
-    Add-Type -AssemblyName System.Drawing
-    # We've moved the System.Windows.Forms loading to the top
+    # Base scale factors that are considered "perfect" for a 2560px wide screen
+    $baseBlBearEffectiveScale = 0.5 * 1.5 # Original logoScaleFactor * 1.5
+    $baseTextLogoEffectiveScale = 0.3
 
-    # Retrieve primary monitor size
+    Add-Type -AssemblyName System.Drawing
+
     try {
-        $screenWidth = [System.Windows.Forms.SystemInformation]::PrimaryMonitorSize.Width
-        $screenHeight = [System.Windows.Forms.SystemInformation]::PrimaryMonitorSize.Height
+        $screenWidth = 4096#[System.Windows.Forms.SystemInformation]::PrimaryMonitorSize.Width
+        $screenHeight = 1152#[System.Windows.Forms.SystemInformation]::PrimaryMonitorSize.Height
     }
     catch {
-        $screenWidth = 1920
-        $screenHeight = 1080
+        $screenWidth = 1920 # Fallback
+        $screenHeight = 1080 # Fallback
     }
     Write-Host "Screen Width: $screenWidth, Screen Height: $screenHeight"
 
+    # Define the reference width where base scaling is perfect
+    $perfectReferenceWidth = 2560.0 # Use float for precision
+
+    # Calculate adjustment factor based on current screen width vs perfect reference width
+    $resolutionScaleAdjustment = $screenWidth / $perfectReferenceWidth
+
+    # Dynamically adjusted scale factors for the current resolution
+    $currentBlBearScale = $baseBlBearEffectiveScale * $resolutionScaleAdjustment
+    $currentTextLogoScale = $baseTextLogoEffectiveScale * $resolutionScaleAdjustment
+
     # Define background colors
     $colors = @("#FFEEC9", "#202020")
-
-
-    # Select a random color
     $backgroundColor = [System.Drawing.ColorTranslator]::FromHtml((Get-Random -InputObject $colors))
 
-    if($backgroundColor -eq "#202020" )#-or $backgroundColor -eq "#4A8B4D" -or $backgroundColor -eq "#1F79C3")
-    {
-        Write-host "Choose white BjornLunden Logo"
+    if($backgroundColor.ToArgb() -eq [System.Drawing.ColorTranslator]::FromHtml("#202020").ToArgb() ) { # Compare Argb values for colors
+        Write-Host "Choose white BjornLunden Logo"
         $BLTextVersion = $bjornLundenWhitePngPath
-    }else {
-        Write-host "Choose dark BjornLunden Logo"
+    } else {
+        Write-Host "Choose dark BjornLunden Logo"
         $BLTextVersion = $bjornLundenPngPath
     }
 
-    # Reference dimensions for scaling
-    $referenceWidth = 1920
-    $referenceHeight = 1080
-    $scaleFactorX = $screenWidth / $referenceWidth
-    $scaleFactorY = $screenHeight / $referenceHeight
+    # Margins are scaled relative to 1920x1080 as per original logic
+    # If margins also need to be relative to 2560x1440, this part would also need adjustment
+    $marginReferenceWidth = 1920.0
+    $marginReferenceHeight = 1080.0
+    $scaleFactorX_Margins = $screenWidth / $marginReferenceWidth
+    $scaleFactorY_Margins = $screenHeight / $marginReferenceHeight
+    $fixedMarginY = [math]::Round($intY * $scaleFactorY_Margins) # $intY = 75 (global)
+    $fixedMarginX = [math]::Round($intX * $scaleFactorX_Margins) # $intX = 15 (global)
 
-    # Fixed margin values for the BjornLunden logo
-    $fixedMarginY = [math]::Round(58 * $scaleFactorY)
-    $fixedMarginX = [math]::Round(15 * $scaleFactorX)
-
-    # Load the PNG images
     try {
         Write-Host "Attempting to load BLBear image from: $blBearPngPath"
         $blBearImage = [System.Drawing.Image]::FromFile($blBearPngPath)
@@ -153,18 +161,17 @@ function Build-APeakingBearWallpaper {
         $bjornLundenImage = [System.Drawing.Image]::FromFile($BLTextVersion)
         Write-Host "BjornLunden image loaded successfully."
 
-        # Calculate new sizes for PNGs using the logo scale factor
-        $blBearNewWidth = [math]::Round($blBearImage.Width * $logoScaleFactor*1.5)
-        $blBearNewHeight = [math]::Round($blBearImage.Height * $logoScaleFactor*1.5)
-        $bjornLundenNewWidth = [math]::Round($bjornLundenImage.Width * $TextLogoScaleFactor)
-        $bjornLundenNewHeight = [math]::Round($bjornLundenImage.Height * $TextLogoScaleFactor)
+        # Calculate new sizes for PNGs using dynamically adjusted scales
+        $blBearNewWidth = [math]::Round($blBearImage.Width * $currentBlBearScale)
+        $blBearNewHeight = [math]::Round($blBearImage.Height * $currentBlBearScale)
+        $bjornLundenNewWidth = [math]::Round($bjornLundenImage.Width * $currentTextLogoScale)
+        $bjornLundenNewHeight = [math]::Round($bjornLundenImage.Height * $currentTextLogoScale)
 
         Write-Host "Original BLBear Width: $($blBearImage.Width), Height: $($blBearImage.Height)"
-        Write-Host "New BLBear Width: $blBearNewWidth, Height: $blBearNewHeight"
+        Write-Host "Adjusted BLBear Scale: $currentBlBearScale, New Width: $blBearNewWidth, New Height: $blBearNewHeight"
         Write-Host "Original BjornLunden Width: $($bjornLundenImage.Width), Height: $($bjornLundenImage.Height)"
-        Write-Host "New BjornLunden Width: $bjornLundenNewWidth, Height: $bjornLundenNewHeight"
+        Write-Host "Adjusted BjornLunden Scale: $currentTextLogoScale, New Width: $bjornLundenNewWidth, New Height: $bjornLundenNewHeight"
 
-        # Create the final bitmap with a specific pixel format
         $finalBitmap = New-Object System.Drawing.Bitmap $screenWidth, $screenHeight, ([System.Drawing.Imaging.PixelFormat]::Format32bppArgb).value__
         Write-Host "Final bitmap created."
 
@@ -174,148 +181,123 @@ function Build-APeakingBearWallpaper {
             $graphics.InterpolationMode = [System.Drawing.Drawing2D.InterpolationMode]::HighQualityBicubic
             $graphics.SmoothingMode = [System.Drawing.Drawing2D.SmoothingMode]::HighQuality
 
-            # Fill the background with the selected color
             $solidBrush = New-Object System.Drawing.SolidBrush $backgroundColor
             $graphics.FillRectangle($solidBrush, 0, 0, $screenWidth, $screenHeight)
             $solidBrush.Dispose()
 
-            # Calculate the X position for the BLBear image (slightly offscreen to the right)
-            $blBearX = $screenWidth - ([math]::Round($blBearNewWidth * 0.55)) # Show about 75%
+            $blBearX = $screenWidth - ([math]::Round($blBearNewWidth * 0.55)) # Show about 55% of new width
             $blBearY = ($screenHeight - $blBearNewHeight) / 2
-
-            # Draw the BLBear image
             $graphics.DrawImage($blBearImage, $blBearX, $blBearY, $blBearNewWidth, $blBearNewHeight)
 
-            # Position BjornLunden logo at the bottom left with margin
             $bjornLundenX = $fixedMarginX
             $bjornLundenY = $screenHeight - $bjornLundenNewHeight - $fixedMarginY
-
-            # Draw BjornLunden logo
             $graphics.DrawImage($bjornLundenImage, $bjornLundenX, $bjornLundenY, $bjornLundenNewWidth, $bjornLundenNewHeight)
-
         }
         finally {
-            if ($graphics) {
-                $graphics.Dispose()
-            }
+            if ($graphics) { $graphics.Dispose() }
         }
 
-        # Check if $finalBitmap is null before saving
-        Write-Host "Value of \$finalBitmap before Save: $($finalBitmap)"
-
-        # Save the final image directly
         Write-Host "Attempting to save the peaking bear wallpaper to: $($finalImagePath)"
         $finalBitmap.Save($finalImagePath, [System.Drawing.Imaging.ImageFormat]::Png)
         Write-Host "Peaking bear wallpaper saved successfully."
         $finalBitmap.Dispose()
         $blBearImage.Dispose()
         $bjornLundenImage.Dispose()
-
     }
     catch {
         Write-Warning "Error building the peaking bear wallpaper: $($_.Exception.Message)"
         return $null
     }
-
     return $finalImagePath
 }
 
 function Build-ABearWallpaper {
-    $logoScaleFactor = 0.3 # Adjust this value to control the logo size (e.g., 0.5 for half the current size)
-    Add-Type -AssemblyName System.Drawing
-    # We've moved the System.Windows.Forms loading to the top
+    # Base scale factor that is considered "perfect" for a 2560px wide screen
+    $baseLogoEffectiveScale = 0.3
 
-    # Retrieve primary monitor size
+    Add-Type -AssemblyName System.Drawing
+
     try {
-        $screenWidth = [System.Windows.Forms.SystemInformation]::PrimaryMonitorSize.Width
-        $screenHeight = [System.Windows.Forms.SystemInformation]::PrimaryMonitorSize.Height
+        $screenWidth = 4096#[System.Windows.Forms.SystemInformation]::PrimaryMonitorSize.Width
+        $screenHeight = 1152#[System.Windows.Forms.SystemInformation]::PrimaryMonitorSize.Height
     }
     catch {
-        $screenWidth = 1920
-        $screenHeight = 1080
+        $screenWidth = 1920 # Fallback
+        $screenHeight = 1080 # Fallback
     }
     Write-Host "Screen Width: $screenWidth, Screen Height: $screenHeight"
 
+    # Define the reference width where base scaling is perfect
+    $perfectReferenceWidth = 2560.0 # Use float for precision
+
+    # Calculate adjustment factor based on current screen width vs perfect reference width
+    $resolutionScaleAdjustment = $screenWidth / $perfectReferenceWidth
+
+    # Dynamically adjusted scale factor for the current resolution
+    $currentLogoScale = $baseLogoEffectiveScale * $resolutionScaleAdjustment
+    
     # Define background colors
     $colors = @("#FFBB00", "#F7CFE0", "#FFEEC9", "#202020")
-
-    # Select a random color
     $backgroundColor = [System.Drawing.ColorTranslator]::FromHtml((Get-Random -InputObject $colors))
 
-    if($backgroundColor -eq "#202020")
-    {
-        Write-host "Choose white BjornLunden Logo"
+    if($backgroundColor.ToArgb() -eq [System.Drawing.ColorTranslator]::FromHtml("#202020").ToArgb() ) { # Compare Argb values for colors
+        Write-Host "Choose white BjornLunden Logo"
         $BLTextVersion = $bjornLundenWhitePngPath
-    }else {
-        Write-host "Choose dark BjornLunden Logo"
+    } else {
+        Write-Host "Choose dark BjornLunden Logo"
         $BLTextVersion = $bjornLundenPngPath
     }
     
+    # Margins are scaled relative to 1920x1080 as per original logic
+    $marginReferenceWidth = 1920.0
+    $marginReferenceHeight = 1080.0
+    $scaleFactorX_Margins = $screenWidth / $marginReferenceWidth
+    $scaleFactorY_Margins = $screenHeight / $marginReferenceHeight
+    $fixedMarginY = [math]::Round($intY * $scaleFactorY_Margins) # $intY = 75 (global)
+    $fixedMarginX = [math]::Round($intX * $scaleFactorX_Margins) # $intX = 15 (global)
 
-    # Reference dimensions for scaling (we'll use this for relative positioning)
-    $referenceWidth = 1920
-    $referenceHeight = 1080
-    $scaleFactorX = $screenWidth / $referenceWidth
-    $scaleFactorY = $screenHeight / $referenceHeight
-
-    # Fixed margin values (scaled by screen resolution)
-    $fixedMarginY = [math]::Round(58 * $scaleFactorY)
-    $fixedMarginX = [math]::Round(15 * $scaleFactorX)
-
-    # Load the PNG images
     try {
         $bearNoseImage = [System.Drawing.Image]::FromFile($bearNosePngPath)
         $bjornLundenImage = [System.Drawing.Image]::FromFile($BLTextVersion)
 
-        # Calculate new sizes for PNGs using the new scale factor
-        $bearNoseNewWidth = [math]::Round($bearNoseImage.Width * $logoScaleFactor)
-        $bearNoseNewHeight = [math]::Round($bearNoseImage.Height * $logoScaleFactor)
-        $bjornLundenNewWidth = [math]::Round($bjornLundenImage.Width * $logoScaleFactor)
-        $bjornLundenNewHeight = [math]::Round($bjornLundenImage.Height * $logoScaleFactor)
+        # Calculate new sizes for PNGs using dynamically adjusted scale
+        $bearNoseNewWidth = [math]::Round($bearNoseImage.Width * $currentLogoScale)
+        $bearNoseNewHeight = [math]::Round($bearNoseImage.Height * $currentLogoScale)
+        $bjornLundenNewWidth = [math]::Round($bjornLundenImage.Width * $currentLogoScale) # Uses same scale
+        $bjornLundenNewHeight = [math]::Round($bjornLundenImage.Height * $currentLogoScale) # Uses same scale
 
         Write-Host "Original Bear Nose Width: $($bearNoseImage.Width), Height: $($bearNoseImage.Height)"
-        Write-Host "New Bear Nose Width: $bearNoseNewWidth, Height: $bearNoseNewHeight"
+        Write-Host "Adjusted Bear Nose Scale: $currentLogoScale, New Width: $bearNoseNewWidth, New Height: $bearNoseNewHeight"
         Write-Host "Original BjornLunden Width: $($bjornLundenImage.Width), Height: $($bjornLundenImage.Height)"
-        Write-Host "New BjornLunden Width: $bjornLundenNewWidth, Height: $bjornLundenNewHeight"
+        Write-Host "Adjusted BjornLunden Scale: $currentLogoScale, New Width: $bjornLundenNewWidth, New Height: $bjornLundenNewHeight"
 
-        # Create the final bitmap
         $finalBitmap = New-Object System.Drawing.Bitmap $screenWidth, $screenHeight
         $graphics = [System.Drawing.Graphics]::FromImage($finalBitmap)
         $graphics.InterpolationMode = [System.Drawing.Drawing2D.InterpolationMode]::HighQualityBicubic
         $graphics.SmoothingMode = [System.Drawing.Drawing2D.SmoothingMode]::HighQuality
 
-        # Fill the background with the selected color
         $solidBrush = New-Object System.Drawing.SolidBrush $backgroundColor
         $graphics.FillRectangle($solidBrush, 0, 0, $screenWidth, $screenHeight)
         $solidBrush.Dispose()
 
-        # Calculate center position for the bear nose
         $bearNoseX = ($screenWidth - $bearNoseNewWidth) / 2
         $bearNoseY = ($screenHeight - $bearNoseNewHeight) / 2
-
-        # Draw the bear nose onto the final bitmap with new dimensions
         $graphics.DrawImage($bearNoseImage, $bearNoseX, $bearNoseY, $bearNoseNewWidth, $bearNoseNewHeight)
 
-        # Position BjornLunden logo at the bottom left with margin
         $bjornLundenX = $fixedMarginX
         $bjornLundenY = $screenHeight - $bjornLundenNewHeight - $fixedMarginY
-
-        # Draw BjornLunden logo onto the final bitmap with new dimensions
         $graphics.DrawImage($bjornLundenImage, $bjornLundenX, $bjornLundenY, $bjornLundenNewWidth, $bjornLundenNewHeight)
 
-        # Save the final image
         $finalBitmap.Save($finalImagePath, [System.Drawing.Imaging.ImageFormat]::Png)
         $graphics.Dispose()
         $finalBitmap.Dispose()
         $bearNoseImage.Dispose()
         $bjornLundenImage.Dispose()
-
     }
     catch {
         Write-Warning "Error building the wallpaper: $($_.Exception.Message)"
         return $null
     }
-
     return $finalImagePath
 }
 
